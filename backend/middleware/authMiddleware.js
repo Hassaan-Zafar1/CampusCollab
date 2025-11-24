@@ -19,3 +19,25 @@ const jwt = require('jsonwebtoken');
        res.status(401).json({ message: 'Not authorized, no token' });
      }
    };
+
+// Check if user is a professor
+exports.professorOnly = (req, res, next) => {
+  if (req.user && req.user.role === 'professor') {
+    next();
+  } else {
+    res.status(403).json({ 
+      message: 'Access denied. Only professors can perform this action.' 
+    });
+  }
+};
+
+// Check if user is a student
+exports.studentOnly = (req, res, next) => {
+  if (req.user && req.user.role === 'student') {
+    next();
+  } else {
+    res.status(403).json({ 
+      message: 'Access denied. Only students can perform this action.' 
+    });
+  }
+};
