@@ -21,13 +21,16 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../theme/ThemeContext';
+import api from '../src/api/axios';
 
 interface ProfileMenuProps {
   user: {
+    _id?: string;
     name: string;
     email: string;
     role: string;
     department: string;
+    profilePicture?: string;
   };
   selectedInterests?: string[];
   onInterestsChange?: (interests: string[]) => void;
@@ -63,16 +66,63 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
   }
 }) => {
   const { theme, styles } = useTheme();
-  const [profileImg, setProfileImg] = useState<string | null>(null);
+  const [uploadingPicture, setUploadingPicture] = useState(false);
   const [isHoveredAvatar, setIsHoveredAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const getProfileImageUrl = (value?: string) => {
+    if (!value) return null;
+    if (value.startsWith('http://') || value.startsWith('https://')) return value;
+    const normalized = value.startsWith('/') ? value.slice(1) : value;
+    return `http://localhost:5000/${normalized}`;
+  };
+
+  const profileImg = getProfileImageUrl(user?.profilePicture);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setProfileImg(reader.result as string);
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('profilePicture', file);
+
+    try {
+      setUploadingPicture(true);
+      const response = await api.put('/auth/update-profile', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const updatedUser = { ...currentUser, ...response.data };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      window.dispatchEvent(new CustomEvent('userUpdated', { detail: updatedUser }));
+    } catch (error: any) {
+      alert(error?.response?.data?.message || 'Failed to upload profile picture');
+    } finally {
+      setUploadingPicture(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemovePicture = async () => {
+    try {
+      setUploadingPicture(true);
+      const response = await api.put('/auth/update-profile', {
+        profilePicture: '',
+      });
+
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      const updatedUser = { ...currentUser, ...response.data };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      window.dispatchEvent(new CustomEvent('userUpdated', { detail: updatedUser }));
+    } catch (error: any) {
+      alert(error?.response?.data?.message || 'Failed to remove profile picture');
+    } finally {
+      setUploadingPicture(false);
     }
   };
 
@@ -114,14 +164,16 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
                 >
                   <button 
                     onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingPicture}
                     className="flex items-center space-x-2 px-3 py-1.5 bg-white/20 hover:bg-white/40 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all hover:scale-105"
                   >
                     <Upload size={14} />
-                    <span>{profileImg ? 'Change' : 'Upload'}</span>
+                    <span>{uploadingPicture ? 'Uploading...' : profileImg ? 'Change' : 'Upload'}</span>
                   </button>
                   {profileImg && (
                     <button 
-                      onClick={() => setProfileImg(null)}
+                      onClick={handleRemovePicture}
+                      disabled={uploadingPicture}
                       className="flex items-center space-x-2 px-3 py-1.5 bg-brand-maroonBright hover:bg-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all hover:scale-105"
                     >
                       <Trash2 size={14} />

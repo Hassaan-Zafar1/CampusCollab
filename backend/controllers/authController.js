@@ -19,6 +19,7 @@ const buildUserPayload = (user) => ({
   github: user.github || '',
   linkedin: user.linkedin || '',
   portfolio: user.portfolio || '',
+  profilePicture: user.profilePicture || '',
   skills: Array.isArray(user.skills) ? user.skills : [],
   isVerified: Boolean(user.isVerified),
 });
@@ -351,20 +352,39 @@ exports.verifyOtpAndCreateUser = async (req, res) => {
 // Update User Profile logic
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, github, linkedin, portfolio, department, skills } = req.body;
+    const { name, github, linkedin, portfolio, department, skills, profilePicture } = req.body;
 
     const updateData = {};
     if (name !== undefined) updateData.name = name;
     if (github !== undefined) updateData.github = github;
     if (linkedin !== undefined) updateData.linkedin = linkedin;
     if (portfolio !== undefined) updateData.portfolio = portfolio;
+    if (profilePicture !== undefined) updateData.profilePicture = profilePicture;
     if (department !== undefined) updateData.department = department;
     if (skills !== undefined) {
-      updateData.skills = Array.isArray(skills)
-        ? skills
-        : typeof skills === 'string'
-        ? skills.split(',').map((s) => s.trim()).filter(Boolean)
-        : [];
+      if (Array.isArray(skills)) {
+        updateData.skills = skills;
+      } else if (typeof skills === 'string') {
+        const trimmedSkills = skills.trim();
+        if (trimmedSkills.startsWith('[')) {
+          try {
+            const parsed = JSON.parse(trimmedSkills);
+            updateData.skills = Array.isArray(parsed)
+              ? parsed.map((s) => String(s).trim()).filter(Boolean)
+              : [];
+          } catch (e) {
+            updateData.skills = trimmedSkills.split(',').map((s) => s.trim()).filter(Boolean);
+          }
+        } else {
+          updateData.skills = trimmedSkills.split(',').map((s) => s.trim()).filter(Boolean);
+        }
+      } else {
+        updateData.skills = [];
+      }
+    }
+
+    if (req.file) {
+      updateData.profilePicture = req.file.path.replace(/\\/g, '/');
     }
 
     const updatedUser = await User.findByIdAndUpdate(req.user._id, updateData, {

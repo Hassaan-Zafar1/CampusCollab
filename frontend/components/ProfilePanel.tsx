@@ -17,13 +17,26 @@ const ProfilePanel: React.FC = () => {
     return () => window.removeEventListener('userUpdated', handleUserUpdate as EventListener);
   }, []);
 
+  const getProfileImageUrl = (value?: string) => {
+    if (!value) return null;
+    if (value.startsWith('http://') || value.startsWith('https://')) return value;
+    const normalized = value.startsWith('/') ? value.slice(1) : value;
+    return `http://localhost:5000/${normalized}`;
+  };
+
+  const profileImg = getProfileImageUrl(user?.profilePicture);
+
   return (
     <aside className="w-full lg:w-80 lg:sticky lg:top-32 space-y-6 shrink-0 transition-colors duration-500">
       <div className="bg-white dark:bg-[#121212] rounded-3xl p-8 border border-brand-maroon/5 dark:border-brand-maroon/30 shadow-soft text-center overflow-hidden relative transition-all">
         <div className="absolute top-0 left-0 w-full h-24 bg-brand-maroon/5 dark:bg-brand-maroon/20"></div>
         <div className="relative w-24 h-24 mx-auto mb-6 mt-4">
-          <div className="w-full h-full rounded-[32px] bg-brand-cream dark:bg-[#080808] border-2 border-white dark:border-brand-maroon/20 flex items-center justify-center text-brand-maroon dark:text-white shadow-sm">
-            <User size={40} />
+          <div className="w-full h-full rounded-[32px] bg-brand-cream dark:bg-[#080808] border-2 border-white dark:border-brand-maroon/20 flex items-center justify-center text-brand-maroon dark:text-white shadow-sm overflow-hidden">
+            {profileImg ? (
+              <img src={profileImg} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <User size={40} />
+            )}
           </div>
           <div className="absolute -bottom-1 -right-1 bg-brand-mint text-brand-charcoal p-2 rounded-xl border-4 border-white dark:border-[#121212] shadow-lg">
             <ShieldCheck size={14} />

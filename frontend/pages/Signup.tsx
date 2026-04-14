@@ -80,6 +80,7 @@ const Signup: React.FC<SignupProps> = ({ onNavigate, onSuccess }) => {
         github: response.data.github || '',
         linkedin: response.data.linkedin || '',
         portfolio: response.data.portfolio || '',
+        profilePicture: response.data.profilePicture || '',
         skills: Array.isArray(response.data.skills) ? response.data.skills : [],
         isVerified: !!response.data.isVerified,
         token: response.data.token,
