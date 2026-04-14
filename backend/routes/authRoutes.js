@@ -1,14 +1,26 @@
 const express = require('express');
-   const router = express.Router();
-   const {preRegister, login, verifyOtpAndCreateUser}= require('../controllers/authController');
+const router = express.Router();
 
-   router.post('/register', preRegister);
-   router.post('/login', login);
-   router.post('/verifyOTP' , verifyOtpAndCreateUser);
+const { 
+    preRegister, 
+    login, 
+    verifyOtpAndCreateUser, 
+    updateProfile // New function
+} = require('../controllers/authController');
 
-   module.exports = router;
-   
 const { protect } = require('../middleware/authMiddleware');
-   router.get('/profile', protect, (req, res) => {
-     res.json(req.user);
-   });
+
+// Public Routes
+router.post('/register', preRegister);
+router.post('/login', login);
+router.post('/verifyOTP', verifyOtpAndCreateUser);
+
+// Private Routes (Require Token)
+router.put('/update-profile', protect, updateProfile);
+
+// Existing profile GET route
+router.get('/profile', protect, (req, res) => {
+    res.json(req.user);
+});
+
+module.exports = router;

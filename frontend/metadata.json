@@ -1,0 +1,7 @@
+{
+  "name": "NED Campus Collab",
+  "description": "A collaborative platform for NED University students to share resources, connect on projects, and stay updated with campus events.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
