@@ -53,7 +53,7 @@ const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
               showInterests={false}
             />
           )}
-          
+
           <div className="flex-grow">
             <motion.div
               initial={{ opacity: 0, x: 20 }}

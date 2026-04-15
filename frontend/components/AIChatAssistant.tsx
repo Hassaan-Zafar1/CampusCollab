@@ -92,7 +92,7 @@ const AIChatAssistant: React.FC = () => {
               </div>
               <button 
                 onClick={() => setIsOpen(false)} 
-                className="bg-white/10 hover:bg-crimson p-3 rounded-2xl transition-all"
+                className="bg-white/10 hover:bg-crimson p-3 rounded-2xl transition-all relative z-10"
               >
                 <X size={20} />
               </button>

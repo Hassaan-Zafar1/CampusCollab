@@ -89,10 +89,6 @@ const Signup: React.FC<SignupProps> = ({ onNavigate, onSuccess }) => {
       localStorage.setItem('user', JSON.stringify(userData));
       window.dispatchEvent(new CustomEvent('userUpdated', { detail: userData }));
 
-      if (onSuccess) {
-        onSuccess(email);
-      }
-
       setTimeout(() => {
         onNavigate('login');
       }, 2000);
