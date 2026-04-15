@@ -19,6 +19,7 @@ const buildUserPayload = (user) => ({
   github: user.github || '',
   linkedin: user.linkedin || '',
   portfolio: user.portfolio || '',
+  profilePicture: user.profilePicture || '',
   skills: Array.isArray(user.skills) ? user.skills : [],
   isVerified: Boolean(user.isVerified),
 });
@@ -351,7 +352,7 @@ exports.verifyOtpAndCreateUser = async (req, res) => {
 // Update User Profile logic
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, github, linkedin, portfolio, department, skills } = req.body;
+    const { name, github, linkedin, portfolio, department, skills, profilePicture } = req.body;
 
     const updateData = {};
     if (name !== undefined) updateData.name = name;
@@ -359,6 +360,7 @@ exports.updateProfile = async (req, res) => {
     if (linkedin !== undefined) updateData.linkedin = linkedin;
     if (portfolio !== undefined) updateData.portfolio = portfolio;
     if (department !== undefined) updateData.department = department;
+    if (profilePicture !== undefined) updateData.profilePicture = profilePicture;
     if (skills !== undefined) {
       updateData.skills = Array.isArray(skills)
         ? skills

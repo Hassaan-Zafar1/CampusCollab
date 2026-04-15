@@ -68,7 +68,7 @@ const Signup: React.FC<SignupProps> = ({ onNavigate, onSuccess }) => {
         otp
       });
 
-      setSuccessMessage('Account verified successfully! Redirecting to login...');
+      setSuccessMessage('Account verified successfully! Redirecting to Dashboard...');
       
       // Dispatch custom event with user data
       const userData = {
@@ -90,7 +90,7 @@ const Signup: React.FC<SignupProps> = ({ onNavigate, onSuccess }) => {
       window.dispatchEvent(new CustomEvent('userUpdated', { detail: userData }));
 
       setTimeout(() => {
-        onNavigate('login');
+        onNavigate('projects');
       }, 2000);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Invalid OTP. Please try again.');

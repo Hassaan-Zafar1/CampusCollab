@@ -40,6 +40,8 @@ interface ProfileMenuProps {
     linkedin?: string;
     website?: string;
   };
+  externalProfileImg?: string | null;
+  onImageChange?: (img: string | null) => void;
 }
 
 const INTERESTS_OPTIONS = [
@@ -58,6 +60,8 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
   onTabChange,
   showInterests = true,
   userLinks,
+  externalProfileImg,
+  onImageChange,
 }) => {
   const { theme, styles } = useTheme();
   
@@ -80,10 +84,21 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => setProfileImg(reader.result as string);
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        setProfileImg(base64);
+        if (onImageChange) onImageChange(base64);
+      };
       reader.readAsDataURL(file);
     }
   };
+
+  const handleRemoveImage = () => {
+    setProfileImg(null);
+    if (onImageChange) onImageChange(null);
+  };
+
+  const displayImg = externalProfileImg || profileImg;
 
   const toggleInterest = (id: string) => {
     if (onInterestsChange) {
@@ -107,8 +122,8 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
             onMouseEnter={() => setIsHoveredAvatar(true)}
             onMouseLeave={() => setIsHoveredAvatar(false)}
           >
-            {profileImg ? (
-              <img src={profileImg} alt="Profile" className="w-full h-full object-cover" />
+            {displayImg ? (
+              <img src={displayImg} alt="Profile" className="w-full h-full object-cover" />
             ) : (
               <User size={56} className={theme === 'light' ? 'text-brand-maroon/40' : 'text-white/20'} />
             )}
@@ -128,9 +143,9 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
                     <Upload size={14} />
                     <span>{profileImg ? 'Change' : 'Upload'}</span>
                   </button>
-                  {profileImg && (
+                  {displayImg && (
                     <button 
-                      onClick={() => setProfileImg(null)}
+                      onClick={handleRemoveImage}
                       className="flex items-center space-x-2 px-3 py-1.5 bg-brand-maroonBright hover:bg-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all hover:scale-105"
                     >
                       <Trash2 size={14} />
