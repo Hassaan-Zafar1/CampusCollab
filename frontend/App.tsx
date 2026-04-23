@@ -1,17 +1,17 @@
-import React, { useState, Suspense } from 'react';
+import React, { useState, Suspense, useEffect, lazy } from 'react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import AIChatAssistant from './components/AIChatAssistant';
 import { useTheme } from './theme/ThemeContext';
 import { AnimatePresence, motion } from 'framer-motion';
 
-// Modular Page Imports
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import Projects from './pages/Projects';
-import Innovation from './pages/Innovation';
-import Profile from './pages/Profile';
+// Modular Page Imports (Dynamic Loading)
+const Home = lazy(() => import('./pages/Home'));
+const Login = lazy(() => import('./pages/Login'));
+const Signup = lazy(() => import('./pages/Signup'));
+const Projects = lazy(() => import('./pages/Projects'));
+const Innovation = lazy(() => import('./pages/Innovation'));
+const Profile = lazy(() => import('./pages/Profile'));
 
 interface PendingNavigation {
   page: string;
@@ -19,13 +19,38 @@ interface PendingNavigation {
 }
 
 const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState('home');
+  const [currentPage, setCurrentPage] = useState(() => {
+    return localStorage.getItem('currentPage') || 'home';
+  });
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState<'student' | 'professor' | null>(null);
   const [pendingNav, setPendingNav] = useState<PendingNavigation | null>(null);
   const [focusedProjectId, setFocusedProjectId] = useState<number | undefined>(undefined);
   
   const { theme, toggleTheme, styles } = useTheme();
+
+  // Restore session from localStorage on app load
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    if (token && userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        setUserRole(user.role);
+        setIsAuthenticated(true);
+      } catch (e) {
+        console.error("Failed to parse user session", e);
+      }
+    } else {
+      // If no token/user but page is protected, revert to home or login
+      const protectedPages = ['projects', 'profile', 'innovation'];
+      const savedPage = localStorage.getItem('currentPage');
+      if (savedPage && protectedPages.includes(savedPage)) {
+         setCurrentPage('home');
+         localStorage.setItem('currentPage', 'home');
+      }
+    }
+  }, []);
 
   const handleAuthSuccess = (email: string) => {
     const role = (email.includes('prof') || email.includes('fac')) ? 'professor' : 'student';
@@ -38,9 +63,11 @@ const App: React.FC = () => {
         setFocusedProjectId(pendingNav.projectId);
       }
       setCurrentPage(pendingNav.page);
+      localStorage.setItem('currentPage', pendingNav.page);
       setPendingNav(null);
     } else {
       setCurrentPage('projects');
+      localStorage.setItem('currentPage', 'projects');
     }
   };
 
@@ -48,7 +75,10 @@ const App: React.FC = () => {
     setIsAuthenticated(false);
     setUserRole(null);
     setCurrentPage('home');
+    localStorage.setItem('currentPage', 'home');
     setFocusedProjectId(undefined);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
   };
 
   const navigateTo = (page: string, params?: { projectId?: number }) => {
@@ -56,6 +86,7 @@ const App: React.FC = () => {
     if ((page === 'projects' || page === 'innovation' || page === 'profile') && !isAuthenticated) {
       setPendingNav({ page, projectId: params?.projectId });
       setCurrentPage('login');
+      localStorage.setItem('currentPage', 'login');
       return;
     }
 
@@ -66,6 +97,7 @@ const App: React.FC = () => {
     }
 
     setCurrentPage(page);
+    localStorage.setItem('currentPage', page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

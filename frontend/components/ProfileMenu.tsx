@@ -17,7 +17,8 @@ import {
   Sparkles,
   Github,
   Linkedin,
-  Link2
+  Link2,
+  ClipboardCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../theme/ThemeContext';
@@ -39,6 +40,8 @@ interface ProfileMenuProps {
     linkedin?: string;
     website?: string;
   };
+  externalProfileImg?: string | null;
+  onImageChange?: (img: string | null) => void;
 }
 
 const INTERESTS_OPTIONS = [
@@ -56,13 +59,23 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
   activeTab,
   onTabChange,
   showInterests = true,
-  userLinks = {
-    github: 'https://github.com',
-    linkedin: 'https://linkedin.com',
-    website: 'https://portfolio.me'
-  }
+  userLinks,
+  externalProfileImg,
+  onImageChange,
 }) => {
   const { theme, styles } = useTheme();
+  
+  // Consolidate links from both props and user object
+  const links = {
+    github: userLinks?.github || (user as any).github || "",
+    linkedin: userLinks?.linkedin || (user as any).linkedin || "",
+    website: userLinks?.website || (user as any).portfolio || ""
+  };
+
+  const formatUrl = (url: string) => {
+    if (!url) return "";
+    return url.startsWith('http') ? url : `https://${url}`;
+  };
   const [profileImg, setProfileImg] = useState<string | null>(null);
   const [isHoveredAvatar, setIsHoveredAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -71,10 +84,21 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => setProfileImg(reader.result as string);
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        setProfileImg(base64);
+        if (onImageChange) onImageChange(base64);
+      };
       reader.readAsDataURL(file);
     }
   };
+
+  const handleRemoveImage = () => {
+    setProfileImg(null);
+    if (onImageChange) onImageChange(null);
+  };
+
+  const displayImg = externalProfileImg || profileImg;
 
   const toggleInterest = (id: string) => {
     if (onInterestsChange) {
@@ -98,8 +122,8 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
             onMouseEnter={() => setIsHoveredAvatar(true)}
             onMouseLeave={() => setIsHoveredAvatar(false)}
           >
-            {profileImg ? (
-              <img src={profileImg} alt="Profile" className="w-full h-full object-cover" />
+            {displayImg ? (
+              <img src={displayImg} alt="Profile" className="w-full h-full object-cover" />
             ) : (
               <User size={56} className={theme === 'light' ? 'text-brand-maroon/40' : 'text-white/20'} />
             )}
@@ -119,9 +143,9 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
                     <Upload size={14} />
                     <span>{profileImg ? 'Change' : 'Upload'}</span>
                   </button>
-                  {profileImg && (
+                  {displayImg && (
                     <button 
-                      onClick={() => setProfileImg(null)}
+                      onClick={handleRemoveImage}
                       className="flex items-center space-x-2 px-3 py-1.5 bg-brand-maroonBright hover:bg-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest text-white transition-all hover:scale-105"
                     >
                       <Trash2 size={14} />
@@ -155,62 +179,56 @@ const ProfileMenu: React.FC<ProfileMenuProps> = ({
              </span>
           </div>
 
-          {/* SOCIAL LINKS ROW */}
           <div className="flex items-center justify-center space-x-4 mb-4">
-            {userLinks.github && (
-              <a 
-                href={userLinks.github} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 border ${
-                  theme === 'light' 
-                    ? 'bg-brand-maroon/5 border-brand-maroon/10 text-brand-maroon hover:bg-brand-maroon hover:text-white' 
-                    : 'bg-white/5 border-white/10 text-white/60 hover:bg-brand-maroonBright hover:text-white'
-                }`}
-                title="GitHub Matrix"
-              >
-                <Github size={18} />
-              </a>
-            )}
-            {userLinks.linkedin && (
-              <a 
-                href={userLinks.linkedin} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 border ${
-                  theme === 'light' 
-                    ? 'bg-brand-maroon/5 border-brand-maroon/10 text-brand-maroon hover:bg-brand-maroon hover:text-white' 
-                    : 'bg-white/5 border-white/10 text-white/60 hover:bg-brand-maroonBright hover:text-white'
-                }`}
-                title="LinkedIn Connection"
-              >
-                <Linkedin size={18} />
-              </a>
-            )}
-            {userLinks.website && (
-              <a 
-                href={userLinks.website} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 border ${
-                  theme === 'light' 
-                    ? 'bg-brand-maroon/5 border-brand-maroon/10 text-brand-maroon hover:bg-brand-maroon hover:text-white' 
-                    : 'bg-white/5 border-white/10 text-white/60 hover:bg-brand-maroonBright hover:text-white'
-                }`}
-                title="Research Portfolio"
-              >
-                <Globe size={18} />
-              </a>
-            )}
+            <a 
+              href={formatUrl(links.github) || "https://github.com"} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 border ${
+                theme === 'light' 
+                  ? 'bg-brand-maroon/5 border-brand-maroon/10 text-brand-maroon hover:bg-brand-maroon hover:text-white' 
+                  : 'bg-white/5 border-white/10 text-white/60 hover:bg-brand-maroonBright hover:text-white'
+              }`}
+              title="GitHub Matrix"
+            >
+              <Github size={18} />
+            </a>
+            <a 
+              href={formatUrl(links.linkedin) || "https://linkedin.com"} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 border ${
+                theme === 'light' 
+                  ? 'bg-brand-maroon/5 border-brand-maroon/10 text-brand-maroon hover:bg-brand-maroon hover:text-white' 
+                  : 'bg-white/5 border-white/10 text-white/60 hover:bg-brand-maroonBright hover:text-white'
+              }`}
+              title="LinkedIn Connection"
+            >
+              <Linkedin size={18} />
+            </a>
+            <a 
+              href={formatUrl(links.website) || "https://portfolio.me"} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 border ${
+                theme === 'light' 
+                  ? 'bg-brand-maroon/5 border-brand-maroon/10 text-brand-maroon hover:bg-brand-maroon hover:text-white' 
+                  : 'bg-white/5 border-white/10 text-white/60 hover:bg-brand-maroonBright hover:text-white'
+              }`}
+              title="Research Portfolio"
+            >
+              <Globe size={18} />
+            </a>
           </div>
         </div>
         
         <div className="space-y-2 relative z-10">
           {[
             { id: 'feed', icon: Layout, label: "Research Feed" },
+            user.role === 'student' && { id: 'applications', icon: ClipboardCheck, label: "My Applications" },
             { id: 'alerts', icon: Bell, label: "Alerts Terminal" },
             { id: 'edit', icon: Edit3, label: "Edit Profile" }
-          ].map((item) => (
+          ].filter(Boolean).map((item: any) => (
             <button 
               key={item.id}
               onClick={() => onTabChange(item.id)}
