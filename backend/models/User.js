@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema({
   github: { type: String, default: "" },
   linkedin: { type: String, default: "" },
   portfolio: { type: String, default: "" },
+  profilePicture: { type: String, default: "" },
   
   skills: [{ type: String }],
   isVerified: { type: Boolean, default: false },

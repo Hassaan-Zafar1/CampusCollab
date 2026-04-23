@@ -6,7 +6,11 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../theme/ThemeContext';
 
-const EditProfileForm: React.FC = () => {
+interface EditProfileFormProps {
+  profileImg?: string | null;
+}
+
+const EditProfileForm: React.FC<EditProfileFormProps> = ({ profileImg }) => {
   const { styles, theme } = useTheme();
   const [loading, setLoading] = useState(false);
   
@@ -100,7 +104,10 @@ const EditProfileForm: React.FC = () => {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + (localStorage.getItem('token') || currentUser.token || '') 
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          profilePicture: profileImg
+        }),
       });
 
       const data = await response.json();

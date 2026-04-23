@@ -5,6 +5,8 @@ import { Search, Database, Loader } from 'lucide-react';
 import { useTheme } from '../theme/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useProjects } from '../services/projectHooks';
+import { useMyApplications } from '../services/applicationHooks';
+import ApplicationList from '../components/ApplicationList';
 
 interface ProjectsProps {
   role: string;
@@ -30,6 +32,25 @@ const Projects: React.FC<ProjectsProps> = ({ role, focusedProjectId, onNavigate 
     page,
     limit: 10
   });
+
+  // Fetch applications for tracking status
+  const { 
+    applications: myApps, 
+    loading: appsLoading, 
+    refetch: refetchApps,
+    deleteApplication 
+  } = useMyApplications();
+
+  // Map project ID to application status
+  const applicationStatusMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    myApps.forEach(app => {
+      if (app.project && app.project._id) {
+        map[app.project._id] = app.status;
+      }
+    });
+    return map;
+  }, [myApps]);
 
   // Dynamic User State handling
   useEffect(() => {
@@ -61,10 +82,10 @@ const Projects: React.FC<ProjectsProps> = ({ role, focusedProjectId, onNavigate 
       // Prioritize selected interests
       const aMatch = selectedInterests.includes(a.category);
       const bMatch = selectedInterests.includes(b.category);
-      
+
       if (aMatch && !bMatch) return -1;
       if (!aMatch && bMatch) return 1;
-      
+
       return 0;
     });
   }, [projects, selectedInterests]);
@@ -75,7 +96,7 @@ const Projects: React.FC<ProjectsProps> = ({ role, focusedProjectId, onNavigate 
         <div className="flex flex-col lg:flex-row gap-12 items-start">
           {/* MODULAR PROFILE MENU */}
           {Object.keys(user).length > 0 && (
-            <ProfileMenu 
+            <ProfileMenu
               user={user}
               selectedInterests={selectedInterests}
               onInterestsChange={setSelectedInterests}
@@ -86,7 +107,7 @@ const Projects: React.FC<ProjectsProps> = ({ role, focusedProjectId, onNavigate 
               }}
             />
           )}
-          
+
           <div className="flex-grow">
             <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-8">
               <div>
@@ -97,13 +118,13 @@ const Projects: React.FC<ProjectsProps> = ({ role, focusedProjectId, onNavigate 
                   Repository <span className={styles.colors.primary === 'brand-maroon' ? 'text-brand-maroon' : 'text-brand-maroonBright'}>Matrix.</span>
                 </h2>
               </div>
-              
+
               <div className="flex flex-col md:flex-row items-center gap-4">
                 <div className="relative group">
                   <Search className={`absolute left-4 top-1/2 -translate-y-1/2 transition-opacity group-focus-within:opacity-100 ${styles.colors.textMuted} opacity-30`} size={16} />
-                  <input 
-                    type="text" 
-                    value={search} 
+                  <input
+                    type="text"
+                    value={search}
                     onChange={e => {
                       setSearch(e.target.value);
                       setPage(1);
@@ -114,17 +135,16 @@ const Projects: React.FC<ProjectsProps> = ({ role, focusedProjectId, onNavigate 
                 </div>
                 <div className={`flex p-1 rounded-2xl border-2 shadow-soft ${styles.colors.bg} ${styles.colors.border}`}>
                   {['all', 'open'].map(f => (
-                    <button 
-                      key={f} 
+                    <button
+                      key={f}
                       onClick={() => {
                         setFilter(f);
                         setPage(1);
                       }}
-                      className={`px-6 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
-                        filter === f 
-                        ? 'bg-brand-maroon dark:bg-brand-maroonSoft text-white shadow-lg shadow-brand-maroon/20' 
-                        : `${styles.colors.textMuted} hover:text-brand-maroon dark:hover:text-white`
-                      }`}
+                      className={`px-6 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${filter === f
+                          ? 'bg-brand-maroon dark:bg-brand-maroonSoft text-white shadow-lg shadow-brand-maroon/20'
+                          : `${styles.colors.textMuted} hover:text-brand-maroon dark:hover:text-white`
+                        }`}
                     >
                       {f === 'all' ? 'All' : 'Open'}
                     </button>
@@ -135,7 +155,7 @@ const Projects: React.FC<ProjectsProps> = ({ role, focusedProjectId, onNavigate 
 
             {/* Loading State */}
             {loading && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className={`text-center py-32 rounded-[40px] border-2 border-dashed ${styles.colors.border} transition-colors`}
@@ -149,7 +169,7 @@ const Projects: React.FC<ProjectsProps> = ({ role, focusedProjectId, onNavigate 
 
             {/* Error State */}
             {error && (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className={`p-8 rounded-[40px] border-2 bg-red-50/50 dark:bg-red-500/10 border-red-200/50 dark:border-red-500/30`}
@@ -160,22 +180,33 @@ const Projects: React.FC<ProjectsProps> = ({ role, focusedProjectId, onNavigate 
               </motion.div>
             )}
 
-            {/* Projects Grid */}
-            {!loading && !error && (
+            {/* Applications List View */}
+            {activeTab === 'applications' && (
+              <ApplicationList 
+                applications={myApps} 
+                loading={appsLoading} 
+                onDelete={deleteApplication} 
+              />
+            )}
+
+            {/* Projects Grid View */}
+            {activeTab === 'feed' && !loading && !error && (
               <>
                 <motion.div layout className="space-y-6">
                   <AnimatePresence mode="popLayout">
                     {filteredAndPrioritized.length > 0 ? (
                       filteredAndPrioritized.map(project => (
-                        <ProjectCard 
-                          key={project._id} 
-                          project={project} 
+                        <ProjectCard
+                          key={project._id}
+                          project={project}
                           isPriority={selectedInterests.includes(project.category)}
                           role={role}
+                          applicationStatus={applicationStatusMap[project._id] as any}
+                          onApplySuccess={refetchApps}
                         />
                       ))
                     ) : (
-                      <motion.div 
+                      <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         className={`text-center py-32 rounded-[40px] border-2 border-dashed ${styles.colors.border} transition-colors`}
@@ -195,11 +226,10 @@ const Projects: React.FC<ProjectsProps> = ({ role, focusedProjectId, onNavigate 
                     <button
                       onClick={() => setPage(p => Math.max(1, p - 1))}
                       disabled={page === 1}
-                      className={`px-6 py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${
-                        page === 1
+                      className={`px-6 py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${page === 1
                           ? 'opacity-50 cursor-not-allowed'
                           : 'bg-brand-maroon text-white hover:bg-brand-maroonSoft'
-                      }`}
+                        }`}
                     >
                       Previous
                     </button>
@@ -209,11 +239,10 @@ const Projects: React.FC<ProjectsProps> = ({ role, focusedProjectId, onNavigate 
                     <button
                       onClick={() => setPage(p => Math.min(pagination.pages, p + 1))}
                       disabled={page === pagination.pages}
-                      className={`px-6 py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${
-                        page === pagination.pages
+                      className={`px-6 py-3 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${page === pagination.pages
                           ? 'opacity-50 cursor-not-allowed'
                           : 'bg-brand-maroon text-white hover:bg-brand-maroonSoft'
-                      }`}
+                        }`}
                     >
                       Next
                     </button>

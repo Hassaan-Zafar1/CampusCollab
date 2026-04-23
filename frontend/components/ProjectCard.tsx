@@ -16,7 +16,7 @@ import {
   Sparkles,
   Loader
 } from 'lucide-react';
-import { useApplyProject } from '../services/projectHooks';
+import { useSubmitApplication } from '../services/applicationHooks';
 
 interface ProjectCardProps {
   project: {
@@ -41,22 +41,32 @@ interface ProjectCardProps {
   };
   isPriority?: boolean;
   role?: string;
+  applicationStatus?: 'pending' | 'approved' | 'rejected';
+  onApplySuccess?: () => void;
 }
 
-const ProjectCard: React.FC<ProjectCardProps> = ({ project, isPriority = false, role = 'student' }) => {
+const ProjectCard: React.FC<ProjectCardProps> = ({ 
+  project, 
+  isPriority = false, 
+  role = 'student', 
+  applicationStatus,
+  onApplySuccess 
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
-  const { apply, loading: applyLoading, error: applyError } = useApplyProject();
+  const { submit: apply, loading: applyLoading, error: applyError } = useSubmitApplication();
 
   const isRedState = isHovered || isExpanded;
   const spotsAvailable = project.maxInterns - project.currentInterns.length;
 
   const handleApply = async () => {
     try {
-      await apply(project._id);
+      const defaultCoverLetter = "I am highly interested in this project and would like to contribute my skills to your research team.";
+      await apply(project._id, defaultCoverLetter);
       setHasApplied(true);
       alert('Application submitted successfully!');
+      if (onApplySuccess) onApplySuccess();
     } catch (err: any) {
       alert('Error: ' + applyError);
     }
@@ -160,12 +170,24 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, isPriority = false, 
                       {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </button>
                   </>
-                ) : hasApplied ? (
+                ) : (hasApplied || applicationStatus) ? (
                   <button 
                     disabled
-                    className={`flex items-center space-x-3 px-10 py-4 bg-emerald-500 border-2 border-emerald-500 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 shadow-2xl`}
+                    className={`flex items-center space-x-3 px-10 py-4 border-2 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] transition-all duration-300 shadow-2xl ${
+                      (applicationStatus || 'pending') === 'approved' 
+                        ? 'bg-emerald-500 border-emerald-500 text-white' 
+                        : (applicationStatus || 'pending') === 'rejected'
+                        ? 'bg-red-500 border-red-500 text-white'
+                        : 'bg-amber-500 border-amber-500 text-white'
+                    }`}
                   >
-                    <span>✓ Applied</span>
+                    <span>
+                      {(applicationStatus || 'pending') === 'approved' 
+                        ? '✓ Accepted' 
+                        : (applicationStatus || 'pending') === 'rejected'
+                        ? '✗ Rejected'
+                        : '⧖ Pending'}
+                    </span>
                   </button>
                 ) : (
                   <button 

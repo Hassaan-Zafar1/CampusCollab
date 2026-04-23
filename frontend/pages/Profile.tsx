@@ -11,12 +11,15 @@ interface ProfileProps {
 const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
   const { styles } = useTheme();
   const [user, setUser] = useState<any>({});
+  const [profileImg, setProfileImg] = useState<string | null>(null);
 
   const loadUser = () => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setProfileImg(parsedUser.profilePicture || null);
       } catch (e) {
         console.error("Failed to parse user from localStorage", e);
         setUser({});
@@ -51,16 +54,18 @@ const Profile: React.FC<ProfileProps> = ({ onNavigate }) => {
                 // Handle other tabs if needed
               }}
               showInterests={false}
+              externalProfileImg={profileImg}
+              onImageChange={setProfileImg}
             />
           )}
-          
+
           <div className="flex-grow">
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5 }}
             >
-              <EditProfileForm />
+              <EditProfileForm profileImg={profileImg} />
             </motion.div>
           </div>
         </div>
