@@ -42,3 +42,13 @@ exports.studentOnly = (req, res, next) => {
     message: 'Access denied. Only students can perform this action.',
   });
 };
+
+// Check if user is an admin
+exports.adminOnly = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    return next();
+  }
+  return res.status(403).json({
+    message: 'Access denied. Admin privileges required.',
+  });
+};

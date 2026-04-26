@@ -12,6 +12,7 @@ const Signup = lazy(() => import('./pages/Signup'));
 const Projects = lazy(() => import('./pages/Projects'));
 const Innovation = lazy(() => import('./pages/Innovation'));
 const Profile = lazy(() => import('./pages/Profile'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 
 interface PendingNavigation {
   page: string;
@@ -23,7 +24,7 @@ const App: React.FC = () => {
     return localStorage.getItem('currentPage') || 'home';
   });
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState<'student' | 'professor' | null>(null);
+  const [userRole, setUserRole] = useState<'student' | 'professor' | 'admin' | null>(null);
   const [pendingNav, setPendingNav] = useState<PendingNavigation | null>(null);
   const [focusedProjectId, setFocusedProjectId] = useState<number | undefined>(undefined);
   
@@ -53,10 +54,26 @@ const App: React.FC = () => {
   }, []);
 
   const handleAuthSuccess = (email: string) => {
-    const role = (email.includes('prof') || email.includes('fac')) ? 'professor' : 'student';
+    // Read the actual role from localStorage (set by login response)
+    let role: 'student' | 'professor' | 'admin' = 'student';
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const parsed = JSON.parse(storedUser);
+        role = parsed.role || 'student';
+      }
+    } catch {}
+
     setUserRole(role);
     setIsAuthenticated(true);
-    
+
+    // Admin goes straight to admin dashboard
+    if (role === 'admin') {
+      setCurrentPage('admin');
+      localStorage.setItem('currentPage', 'admin');
+      return;
+    }
+
     // Check if there was a destination the user was trying to reach
     if (pendingNav) {
       if (pendingNav.projectId) {
@@ -115,12 +132,14 @@ const App: React.FC = () => {
         return <Innovation key="innovation" />;
       case 'profile':
         return <Profile key="profile" onNavigate={navigateTo} />;
+      case 'admin':
+        return <AdminDashboard key="admin" onLogout={logout} />;
       default: 
         return <Home key="home-default" onNavigate={navigateTo} />;
     }
   };
 
-  const isAuthPage = currentPage === 'login' || currentPage === 'signup';
+  const isAuthPage = currentPage === 'login' || currentPage === 'signup' || currentPage === 'admin';
 
   // Determine current view for Navbar styling
   const getCurrentView = () => {

@@ -38,3 +38,6 @@ app.use('/uploads', express.static('uploads'));
 
 const recommendationRoutes = require('./routes/recommendationRoutes');
    app.use('/api/recommendations', recommendationRoutes);
+
+const adminRoutes = require('./routes/adminRoutes');
+   app.use('/api/admin', adminRoutes);
